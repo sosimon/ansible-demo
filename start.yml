@@ -1,0 +1,14 @@
+- name: Spin up EC2 instance
+  hosts: localhost
+  vars_files:
+    - config.cfg
+  roles:
+    - role: aws-ec2
+
+- name: Configure the server and install software
+  hosts: remote-host
+  become: true
+  vars_files:
+    - config.cfg
+  roles:
+    - role: demo
