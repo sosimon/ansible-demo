@@ -51,7 +51,7 @@
       Environment: dev
     exact_count: 1
     count_tag:
-      Name: DemoServer
+      Name: interview-demo 
     assign_public_ip: yes
     instance_initiated_shutdown_behavior: terminate
   register: ec2
