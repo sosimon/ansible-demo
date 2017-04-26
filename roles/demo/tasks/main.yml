@@ -1,19 +1,10 @@
-- name: Install Git
-  yum: 
-    pkg: git
-    state: latest
-    update_cache: yes
-- name: Install Docker
-  yum:
-    pkg: docker
-    state: latest
-    update_cache: yes
-  notify:
-    - Start Docker
-- name: Allow docker cmds without sudo
-  user:
-    name: ec2-user
-    group: docker
-    append: yes
-  notify:
-    - Restart Docker
+- name: Start MySQL server 
+  service: 
+    name: mysql
+    state: started
+- name: Fetch init.sql
+  shell: "curl https://raw.githubusercontent.com/slalomsv/simple-app/master/db/setup_db.sql > init.sql"
+  args:
+    creates: init.sql
+- name: Run DB init script
+  shell: "mysql -u admin -ppassword123 < init.sql"

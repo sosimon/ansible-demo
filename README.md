@@ -5,6 +5,7 @@
 Prepare virtuaenv environment and install required Python packages
 ```
 virtualenv env
+source env/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -16,6 +17,6 @@ set AWS_SECRET_KEY=<key>
 
 ## Usage
 
-`ansible-playbook -i inventory start.yml`
+`ansible-playbook -i inventory start-demo.yml`
 
 Note: `-i inventory` is a workaround so ansible will use the right Python in a virtualenv - https://www.zigg.com/2014/using-virtualenv-python-local-ansible.html

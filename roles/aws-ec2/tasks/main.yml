@@ -2,6 +2,12 @@
     access_key: "{{ aws_access_key | default(lookup('env','AWS_ACCESS_KEY_ID'), true) }}"
     secret_key: "{{ aws_secret_key | default(lookup('env','AWS_SECRET_ACCESS_KEY'), true) }}"
 
+- name: Ensure secrets directory exists
+  file:
+    path: secrets
+    state: directory
+    mode: 0755
+
 - name: Generate SSH private key
   local_action: shell echo -e 'n' | ssh-keygen -b 2048 -t rsa -f {{ ssh_key_private }} -q -N ""
   args:
@@ -10,20 +16,21 @@
 - name: chmod SSH private key
   local_action: file path={{ ssh_key_private }} mode=0600
 
-- name: Locate official Amazon Linux AMI for us-west-2
-  ec2_ami_find:
-    aws_access_key: "{{ access_key }}"
-    aws_secret_key: "{{ secret_key }}"
-    name: "amzn-ami-hvm-*"
-    owner: amazon 
-    sort: creationDate
-    sort_order: descending
-    sort_end: 1
-    region: us-west-2
-  register: ami_search
+#- name: Locate official Amazon Linux AMI for us-west-2
+#  ec2_ami_find:
+#    aws_access_key: "{{ access_key }}"
+#    aws_secret_key: "{{ secret_key }}"
+#    name: "amzn-ami-hvm-*"
+#    owner: amazon 
+#    sort: creationDate
+#    sort_order: descending
+#    sort_end: 1
+#    region: us-west-2
+#  register: ami_search
 
 - set_fact:
-    ami_image: "{{ ami_search.results[0].ami_id }}"
+    #ami_image: "{{ ami_search.results[0].ami_id }}"
+    ami_image: "ami-0eca546e"
 
 - name: Add SSH public key
   ec2_key:
@@ -35,19 +42,32 @@
   with_file: "{{ ssh_key_private }}.pub"
   register: keypair
 
+- name: Create security group
+  ec2_group:
+    name: interview-demo-sg
+    description: auto-created from ansible script
+    vpc_id: vpc-8a31aced
+    region: us-west-2
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+  register: secgroup
+
 - name: Launch EC2 instance
   ec2:
     aws_access_key: "{{ access_key }}"
     aws_secret_key: "{{ secret_key }}"
     keypair: "DEMOKEY"
     vpc_subnet_id: subnet-ea2b1fb2
-    group_id: sg-7d482705
+    group_id: "{{ secgroup.group_id }}"
     instance_type: t2.micro
     image: "{{ ami_image }}"
     wait: true
     region: us-west-2
     instance_tags:
-      Name: DemoServer
+      Name: interview-demo
       Environment: dev
     exact_count: 1
     count_tag:
@@ -60,6 +80,14 @@
   add_host:
     hostname: "{{ item.public_ip }}"
     groupname: remote-host
-    ansible_ssh_user: ec2-user
+    ansible_ssh_user: ubuntu 
     ansible_ssh_private_key_file: "{{ ssh_key_private }}"
   with_items: "{{ ec2.tagged_instances }}" 
+
+#- name: Wait for SSH to come up
+#  wait_for:
+#    host: "{{ item.public_ip }}"
+#    port: 22
+#    timeout: 120
+#    state: started
+#  with_items: "{{ ec2.tagged_instances }}"
