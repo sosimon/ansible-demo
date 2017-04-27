@@ -2,6 +2,12 @@
     access_key: "{{ aws_access_key | default(lookup('env','AWS_ACCESS_KEY_ID'), true) }}"
     secret_key: "{{ aws_secret_key | default(lookup('env','AWS_SECRET_ACCESS_KEY'), true) }}"
 
+- name: Ensure secrets directory exists
+  file:
+    path: secrets
+    state: directory
+    mode: 0755
+
 - name: Generate SSH private key
   local_action: shell echo -e 'n' | ssh-keygen -b 2048 -t rsa -f {{ ssh_key_private }} -q -N ""
   args:
@@ -47,7 +53,7 @@
     wait: true
     region: us-west-2
     instance_tags:
-      Name: DemoServer
+      Name: interview-demo 
       Environment: dev
     exact_count: 1
     count_tag:
